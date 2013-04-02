@@ -38,9 +38,10 @@ void update_link(Link *l);
 void check_boundaries(Point *p);
 void update_mouse(Point **mp, int *mouse_held);
 void draw_barrier();
+int main_point(Point *p);
  
 Point *point_array[NUM_POINTS];
-
+Point *barrier_array[4];
 Link *link_array[NUM_LINKS];
 
 
@@ -137,11 +138,48 @@ void init(void)
       }
     }
   }
+
+  //make an invisible barrier for the mouse to click on
+  Point *p0 = malloc(sizeof(Point));
+  p0->x = -100;
+  p0->y = -100;
+  p0->z = 0;
+
+  Point *p1 = malloc(sizeof(Point));
+  p1->x = -100;
+  p1->y = 100;
+  p1->z = 0;
+
+  Point *p2 = malloc(sizeof(Point));
+  p2->x = 100;
+  p2->y = 100;
+  p2->z = 0;
+
+  Point *p3 = malloc(sizeof(Point));
+  p3->x = 100;
+  p3->y = -100;
+  p3->z = 0;
+
+  barrier_array[0] = p0;
+  barrier_array[1] = p1;
+  barrier_array[2] = p2;
+  barrier_array[3] = p3;
 }
  
 void shut_down(int return_code)
 {
   glfwTerminate();
+
+  for(int i = 0; i < NUM_POINTS; i++) {
+    free(point_array[i]);
+  }
+  for(int i = 0; i < NUM_LINKS; i++) {
+    free(link_array[i]);
+  }
+  for(int i = 0; i < 4; i++) {
+    free(barrier_array[i]);
+  }
+
   exit(return_code);
 }
  
@@ -150,7 +188,7 @@ void main_loop()
   // the time of the previous frame
   double old_time = glfwGetTime();
   // point that the mouse grabs
-  Point *mouse_point = point_array[NUM_POINTS-1];
+  Point *mouse_point = malloc(sizeof(Point)); // temporary
   int mouse_held = 0; // boolean
   // this just loops as long as the program runs
   while(1)
@@ -363,12 +401,13 @@ void check_boundaries(Point *p)
 
 void update_mouse(Point **mp, int *mouse_held)
 {
-  // mp is a point to a pointer so that I can change
-  // the pointer to save the point grabbed by the mouse
-  // between function calls
+  // mp is a pointer to a Point pointer so that I can change
+  // the pointer to save the Point grabbed by the mouse
+  // between function calls...pointer!
   Point *mouse_point = *mp;
   if(!glfwGetMouseButton(GLFW_MOUSE_BUTTON_LEFT)) {
     *mouse_held = 0;
+    *mp = malloc(sizeof(Point));
   }
   else {
     int x, y;
@@ -391,6 +430,7 @@ void update_mouse(Point **mp, int *mouse_held)
 
     //find nearest point to mouse click
     if(!(*mouse_held)) {
+      free(*mp);
       *mouse_held = 1;
       Point *nearest;
       float d = 100000;
@@ -407,38 +447,30 @@ void update_mouse(Point **mp, int *mouse_held)
 	}
       }
       *mp = nearest;
+      mouse_point = nearest;
     }
 
     //drag point around
-    mouse_point->x = posX;// - (NUM_POINTS_X-1)*LINK_DIST/2.0;
-    mouse_point->y = posY;
-    mouse_point->z = posZ;
+    if(*mouse_held) {
+      mouse_point->x = posX;
+      mouse_point->y = posY;
+      mouse_point->z = posZ;
+    }
   }
 }
 
 void draw_barrier()
 {
-  Point *p0 = malloc(sizeof(Point));
-  p0->x = -100;
-  p0->y = -100;
-  p0->z = 0;
-
-  Point *p1 = malloc(sizeof(Point));
-  p1->x = -100;
-  p1->y = 100;
-  p1->z = 0;
-
-  Point *p2 = malloc(sizeof(Point));
-  p2->x = 100;
-  p2->y = 100;
-  p2->z = 0;
-
-  Point *p3 = malloc(sizeof(Point));
-  p3->x = 100;
-  p3->y = -100;
-  p3->z = 0;
-
-  Point *array[] = {p0, p1, p2, p3};
   glColor4f(0, 0, 0, 0);
-  draw_square(array);
+  draw_square(barrier_array);
+}
+
+int main_point(Point *p)
+{
+  for(int i = 0; i < NUM_POINTS; i++) {
+    if(point_array[i] == p) {
+      return 1;
+    }
+  }
+  return 0;
 }
